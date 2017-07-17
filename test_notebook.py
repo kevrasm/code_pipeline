@@ -1,15 +1,15 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Data Exploration and Analyis of SEC Quarterly Filings 
+# MAGIC # Test Notebook to be Run with Codepipeline
 # MAGIC 
 # MAGIC **Business case:**  
-# MAGIC Exploratory analytics on quarterly filings to determine companes of interest.  
+# MAGIC Run as part of Integration testing/Continuous Deployment  
 # MAGIC **Problem Statement:**  
-# MAGIC All data is stored in Redshift.  Need to utilize additional, advanced analytics to advance insight and reduce load on the cluster.  
+# MAGIC  
 # MAGIC **Business solution:**  
-# MAGIC Provide analytics platform that can integrate with current data warehouse to provide additional tools and analytics capacity.  Incorporate S3 as a data lake to store different sources of data in a single platform. This allows data scientists / analysis to quickly analyze the data and generate reports to predict market trends and/or make financial decisions.  
+# MAGIC   
 # MAGIC **Technical Solution:**  
-# MAGIC Spark supports connectivity to any JDBC supported database. Use Databricks as a single platform to pull various sources of data from Redshift, or batch dumps into S3 for further processing. ETL the CSV datasets into efficient Parquet formats for performant processing.  
+# MAGIC 
 # MAGIC 
 # MAGIC Owner: Kevin  
 # MAGIC Runnable: Yes  
@@ -17,8 +17,8 @@
 
 # COMMAND ----------
 
-# dbutils.widgets.text("source", "databricks-kevin/test-input/", "Source Folder")
-# dbutils.widgets.text("target", "databricks-kevin/test-output/", "Target Folder")
+# dbutils.widgets.text("source", "mnt/kevin/test-input/", "Source Folder")
+# dbutils.widgets.text("target", "mnt/kevin/test-output/", "Target Folder")
 # dbutils.widgets.text("run_mode", "prod", "Run Mode")
 
 
@@ -36,14 +36,6 @@ mode = dbutils.widgets.get("run_mode")
 print("source: " + source)
 print("target: " + target)
 print("mode: " + mode)
-
-# COMMAND ----------
-
-# MAGIC %md ####Read in Env Variables
-
-# COMMAND ----------
-
-# MAGIC %run /Users/kevrasm@databricks.com/env_variables
 
 # COMMAND ----------
 
@@ -68,8 +60,9 @@ tag_schema = StructType([
 
 
 # filePath = 's3a://{0}:{1}@databricks-kevin/test-input/tag.txt'.format(AccessKey, SecretKey)
-filePath = 's3a://{0}:{1}@{2}'.format(AccessKey, SecretKey, source)
-tag_df = spark.read.option("header","true").option("sep","\t").csv(filePath)
+# filePath = 's3a://{0}:{1}@{2}'.format(AccessKey, SecretKey, source)
+
+tag_df = spark.read.option("header","true").option("sep","\t").csv(source)
 print 'Tag Schema:'
 tag_df.printSchema()
 tag_df.show(1)
@@ -83,8 +76,7 @@ tag_df.show(1)
 
 if mode == 'test':
   sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
-  test_loc = "s3a://{0}:{1}@{2}".format(AccessKey, SecretKey, target)
-  tag_df.coalesce(1).write.mode("overwrite").parquet(test_loc)
+  tag_df.coalesce(1).write.mode("overwrite").parquet(target)
   values = {"status": "Test", "test_loc": target}
   dbutils.notebook.exit(json.dumps(values))
   
@@ -92,5 +84,6 @@ if mode == 'test':
 # COMMAND ----------
 
 sqlContext.setConf("spark.sql.parquet.compression.codec", "snappy")
-write_loc = "s3a://{0}:{1}@{2}".format(AccessKey, SecretKey, target)
-tag_df.coalesce(1).write.mode("overwrite").parquet(write_loc)
+tag_df.coalesce(1).write.mode("overwrite").parquet(target)
+values = {"status": "Went to wrong spot", "test_loc": target}
+dbutils.notebook.exit(json.dumps(values))
