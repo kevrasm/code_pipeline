@@ -17,6 +17,10 @@
 
 # COMMAND ----------
 
+print("hi")
+
+# COMMAND ----------
+
 # dbutils.widgets.text("source", "mnt/kevin/test-input/", "Source Folder")
 # dbutils.widgets.text("target", "mnt/kevin/test-output/", "Target Folder")
 # dbutils.widgets.text("run_mode", "prod", "Run Mode")
